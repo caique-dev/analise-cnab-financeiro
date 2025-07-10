@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard b.ond</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Dashboard de Análise de Cessões 11/04/2025</h1>
+
+    <div class="resumo-cards">
+      <div class="card full-width">
+        <h3>1. Valor Total de Aquisição da Cessão</h3>
+        <p><strong>R$ 6.472.369,85</strong></p>
+      </div>
+    
+      <div class="card full-width">
+        <h3>2. Top 5 Sacados com Maior Volume</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>UF</th>
+              <th>Nome</th>
+              <th>Volume de Face (R$)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>PJ</td><td>SP</td><td>TerraCultivar Solucoes Rurais</td><td>5.705.210,61</td></tr>
+            <tr><td>PF</td><td>PR</td><td>Thiago Rocha</td><td>5.523.292,97</td></tr>
+            <tr><td>PJ</td><td>RS</td><td>AgroDigitalAgroLeste Producao</td><td>5.367.193,54</td></tr>
+            <tr><td>PJ</td><td>RS</td><td>AgroTransAgrolab Agropecuaria</td><td>5.283.106,58</td></tr>
+            <tr><td>PJ</td><td>RS</td><td>AgroFusionAgroPrime Agronegoc</td><td>3.465.093,62</td></tr>
+          </tbody>
+        </table>
+      </div>
+    
+      <div class="card">
+        <h3>3. Número de Créditos</h3>
+        <p><strong>PF:</strong> 52<br><strong>PJ:</strong> 247</p>
+      </div>
+    
+      <div class="card">
+        <h3>4. Ticket Médio</h3>
+        <p><strong>PF:</strong> R$ 2.368.017,38<br><strong>PJ:</strong> R$ 498.529,97</p>
+      </div>
+    
+      <div class="card">
+        <h3>5. Prazo Médio de Vencimento</h3>
+        <p>
+          <strong>PF:</strong> 459,06 dias<br>
+          <strong>PJ:</strong> 420,08 dias<br>
+          <strong>Geral:</strong> 426,86 dias
+        </p>
+      </div>
+    </div>    
+
+    <h2>Valor de Aquisição por Data de Vencimento</h2>
+    <div id="grafico"></div>
+    <h2>Dispersão Geográfica dos Créditos</h2>
+    <div id="mapa"></div>
+  </div>
+
+  <script>
+    // Plotly gráfico
+    fetch('dados_grafico.csv')
+      .then(response => response.text())
+      .then(data => {
+        const linhas = data.trim().split('\n').slice(1);
+        const x = [], y = [];
+
+        linhas.forEach(linha => {
+          const partes = linha.split(',');
+          x.push(partes[3]);
+          y.push(parseFloat(partes[2]));
+        });
+
+        const trace = {
+          x: x,
+          y: y,
+          type: 'bar',
+          marker: { color: '#3498db' }
+        };
+
+        const layout = {
+          // title: 'Valor de Aquisição por Vencimento',
+          margin: { t: 50, b: 80 },
+          xaxis: {
+            title: 'Vencimento',
+            tickangle: -45
+          },
+          yaxis: {
+            title: 'Valor de Aquisição (R$)'
+          }
+        };
+
+        Plotly.newPlot('grafico', [trace], layout);
+      });
+
+    // D3 mapa
+    const width = 600;
+    const height = 500;
+
+    const svg = d3.select("#mapa").append("svg")
+      .attr("width", width)
+      .attr("height", height);
+
+    const tooltip = d3.select("body")
+      .append("div")
+      .attr("class", "tooltip");
+
+    Promise.all([
+      d3.json("https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson"),
+      d3.csv("dados_mapa_clean.csv")
+    ]).then(([geo, dados]) => {
+      const escala = d3.scaleSequential()
+        .domain([0, d3.max(dados, d => +d.valor_face)])
+        .interpolator(d3.interpolateBlues);
+
+      const mapaDados = {};
+      dados.forEach(d => {
+        mapaDados[d.uf] = d;
+      });
+
+      const projecao = d3.geoMercator().fitSize([width, height], geo);
+      const path = d3.geoPath().projection(projecao);
+
+      svg.selectAll("path")
+        .data(geo.features)
+        .join("path")
+        .attr("d", path)
+        .attr("fill", d => {
+          const uf = d.properties.sigla;
+          const dado = mapaDados[uf];
+          return dado ? escala(+dado.valor_face) : "#ccc";
+        })
+        .attr("stroke", "#fff")
+        .on("mousemove", (event, d) => {
+          const uf = d.properties.sigla;
+          const dado = mapaDados[uf];
+          if (dado) {
+            tooltip.style("opacity", 1)
+              .html(`
+                <strong>${uf}</strong><br>
+                Valor Face: R$ ${(+dado.valor_face).toLocaleString()}<br>
+                Valor Aquisição: R$ ${(+dado.valor_aquisicao).toLocaleString()}<br>
+                Nº Créditos: ${dado.n_creditos}
+              `)
+              .style("left", (event.pageX + 10) + "px")
+              .style("top", (event.pageY - 28) + "px");
+          }
+        })
+        .on("mouseout", () => tooltip.style("opacity", 0));
+    });
+  </script>
+</body>
+</html>
