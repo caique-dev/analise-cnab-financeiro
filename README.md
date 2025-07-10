@@ -1,45 +1,134 @@
-# PS Caique Andrade - Questão 1
-## Contato (Qualquer dúvida ou dificuldade, só me avisar)
-1. [Linkedin](https://www.linkedin.com/in/caique-p-andrade)
-2. [Github](https://github.com/caique-dev)
-3. Email: [c204677@dac.unicamp.br](mailto:c204677@dac.unicamp.br)
+# 📄 CNAB - Análise e Visualização de Créditos Cedidos
+
+## 📌 O que é um arquivo CNAB?
+
+CNAB (Centro Nacional de Automação Bancária) é um padrão de arquivo utilizado no Brasil para a troca de informações financeiras entre empresas e instituições bancárias. Ele é amplamente utilizado para envio de **remessas de cobrança, pagamento e liquidação de títulos**, entre outros serviços bancários automatizados.
+
+Cada arquivo CNAB possui **layout fixo**, com campos posicionais que representam dados como CPF/CNPJ, valor de título, data de vencimento, UF, entre outros. No contexto do mercado financeiro, esses arquivos são especialmente úteis para operações como **cessão de crédito**, onde uma empresa vende seus recebíveis (valores a receber) para um fundo.
 
 ---
 
-## ✅ Pré-requisitos
+## 🧠 Objetivo do Projeto
 
-- [Python 3.7+](https://www.python.org/downloads/)
-- [pip](https://pip.pypa.io/en/stable/installation/)
-- (Opcional) [virtualenv](https://virtualenv.pypa.io/en/latest/) para criar ambientes isolados
+Este projeto realiza a **extração, análise e visualização** de dados contidos em um arquivo CNAB fictício, gerando um relatório interativo com métricas importantes sobre uma cessão de créditos enviada ao fundo. O relatório é gerado em formato HTML e apresenta gráficos, tabelas e um **mapa interativo do Brasil** com a dispersão geográfica dos créditos.
 
 ---
 
-## Para Abrir o Dashboard
-### 1. Dentro da raiz do projeto, execute:
-```bash
-cd ./mapa_interativo && python -m http.server 8000
+## 📁 Estrutura do Projeto
+
 ```
-### 2. Pelo navegador, entre em [localhost](http://localhost:8000/)
-
-## Para gerar todos os arquivos utilizados pelo index.html:
-1. Rode o arquivo extrai_informaloes.py
-2. Rode o arquivo notebook_analiza_informacoes.ipynb ou o analiza_informacoes.py
-    1. O primeiro arquivo contém o passo a passo da análise que fiz, enquanto o segundo é mais direto
-3. Abra o Dashboard
-
-## 🚀 Passo a passo para rodar o notebook (opcional)
-### 2. (Opcional) Crie um ambiente virtual
-
-```bash
-python -m venv venv
-source venv/bin/activate      # Linux/Mac
-venv\Scripts\activate         # Windows
+.
+├── analiza_informacoes.py              # Analisa e processa estatísticas do CSV
+├── extrai_informacoes.py              # Extrai informações do CNAB para CSV
+├── infos_extraidas.csv                # CSV gerado com os dados estruturados
+├── mapa_interativo/
+│   ├── assets/                        # Arquivos auxiliares para o mapa
+│   ├── dados_grafico.csv             # Dados para gráfico de linha
+│   ├── dados_mapa_clean.csv          # Dados geográficos por UF
+│   ├── index.html                    # Página interativa final
+│   └── style.css                     # Estilos visuais do HTML
+├── notebook_analiza_informacoes.ipynb# Notebook de apoio à análise
+├── README.md                         # Este arquivo
+└── REMFIDC11042025143341.txt         # Arquivo CNAB original
 ```
 
-### 3. Instale as dependências
+---
+
+## ⚙️ Etapas da Solução
+
+### 1. **Extração de Dados do CNAB**
+O script `extrai_informacoes.py` processa o arquivo CNAB `REMFIDC11042025143341.txt` e gera o arquivo `infos_extraidas.csv` com os seguintes campos:
+
+- `cnpj_cpf`: Identificador do sacado
+- `tipo_pessoa`: PF ou PJ
+- `nome`: Nome do sacado
+- `valor_titulo`: Valor de face do crédito
+- `taxa_cessao`: Taxa de cessão aplicada
+- `vencimento`: Data de vencimento do título
+- `dias_ate_venc`: Dias corridos até o vencimento
+- `valor_aquisicao`: Valor presente com base na taxa e prazo
+- `uf`: Unidade federativa do sacado
+
+---
+
+### 2. **Análise Estatística**
+O script `analiza_informacoes.py` consome o `infos_extraidas.csv` e calcula:
+
+- ✅ **Valor total de aquisição da cessão**
+- ✅ **Top 5 sacados com maior valor de face agregado**
+- ✅ **Número de créditos PF e PJ**
+- ✅ **Ticket médio por tipo de pessoa**
+- ✅ **Prazo médio de vencimento (total, PF, PJ)**
+- ✅ **Gráfico: Valor de aquisição por data de vencimento**
+- ✅ **Mapa: Dispersão geográfica por UF**
+
+Gera dois arquivos auxiliares para visualização:
+- `dados_grafico.csv`
+- `dados_mapa_clean.csv`
+
+---
+
+### 3. **Relatório Interativo (HTML + JS + CSS)**
+A pasta `mapa_interativo/` contém a página `index.html`, que apresenta os resultados em uma interface amigável com:
+
+- Gráfico de linha (valor de aquisição × data de vencimento)
+- Mapa do Brasil com dispersão por UF
+- Informações agregadas e tabelas
+
+---
+
+## 📊 Visualizando o Relatório
+
+### ✅ Rodar com servidor local
 
 ```bash
-pip install notebook
+cd mapa_interativo
+python3 -m http.server 8000
 ```
 
-### 4. Instale a [extensão no vscode](https://marketplace.visualstudio.com/items?itemName=ms-toolsai.jupyter])
+Acesse no navegador:
+```
+http://localhost:8000
+```
+---
+
+## Preview
+
+### Página inteira
+<img src="assets/preview.png">
+
+### Mapa interativo
+<img src="assets/mapa.png">
+
+---
+
+
+## ✅ Requisitos
+
+- Python 3.8 ou superior
+- Bibliotecas:
+  ```bash
+  pip install pandas matplotlib
+  ```
+
+---
+
+## 🚀 Como Executar o Projeto
+
+1. **Extraia os dados do CNAB**:
+   ```bash
+   python extrai_informacoes.py
+   ```
+
+2. **Gere os dados e estatísticas para visualização**:
+   ```bash
+   python analiza_informacoes.py
+   ```
+
+3. **Inicie o servidor e acesse o mapa**:
+   ```bash
+   cd mapa_interativo
+   python3 -m http.server 8000
+   ```
+
+
